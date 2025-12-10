@@ -1,30 +1,20 @@
-import multer from "multer";
-import path from "path";
+import {imagekit} from "../config/imagekit.js"; // selon ton chemin
 
-// Stockage sur le serveur local
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/"); // dossier uploads
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname);
-    cb(null, file.fieldname + "-" + Date.now() + ext);
-  }
-});
+export const uploadImage = async (req, res) => {
+  const { file, fileName } = req.body; // file = base64 ou fichier binaire
 
-// Filtrer uniquement les images
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image/")) {
-    cb(null, true);
-  } else {
-    cb(new Error("Seules les images sont autorisées"), false);
+  try {
+    const result = await imagekit.upload({
+      file,
+      fileName,
+      folder: "nappylocks", // optionnel : dossier dans ImageKit
+    });
+
+    return res.status(200).json({ url: result.url });
+  } catch (err) {
+    console.error("UPLOAD ERROR:", err);
+    return res.status(500).json({ message: "Échec de l’upload" });
   }
 };
 
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // max 5 Mo
-});
-
-export default upload;
+export default uploadImage

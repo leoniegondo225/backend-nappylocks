@@ -7,10 +7,12 @@ const SalonSchema = new Schema(
     nom: { type: String, required: true, trim: true },
     address: { type: String, required: true },
     telephone: { type: String, required: true },
-    gerant: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    status: { type: String, enum: ["en_attente", "validé", "rejeté"], default: "en_attente" },
-    services: [{ type: Schema.Types.ObjectId, ref: "Service" }], // référence aux services proposés
-    description: { type: String, default: "" },
+    pays: { type: String, required: true },
+    email: { type: String, required: true },
+    ville: { type: String, required: true },
+    gerantId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    status: { type: String, enum:  ["active", "inactive"], default: "active" }, // référence aux services proposés
+    
   },
   { timestamps: true }
 );

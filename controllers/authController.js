@@ -10,7 +10,6 @@ export const Register = async (req, res) => {
     const { username, email, password, role, telephone } = req.body;
     console.log("REQ.BODY:", req.body);
 
-   // Vérifier email + username uniques
     const exists = await UserModel.findOne({
       $or: [{ email }, { username }],
     });
@@ -19,17 +18,18 @@ export const Register = async (req, res) => {
       return res.status(400).json({ message: "Email ou username déjà utilisé" });
     }
 
-     const hash = await bcrypt.hash(password, 10);
+    const hash = await bcrypt.hash(password, 10);
 
-    // Création de l'utilisateur
     const newUser = await UserModel.create({
       username,
       email,
       password: hash,
       role: role || "client",
       telephone: telephone || null,
-      createdBy: req.user._id,
+      createdBy: req.user ? req.user._id : null, // 🔥 correction OBLIGATOIRE
     });
+
+    console.log(newUser)
 
     return res.status(201).json({
       message: "Utilisateur créé avec succès",
@@ -38,14 +38,16 @@ export const Register = async (req, res) => {
         username: newUser.username,
         email: newUser.email,
         role: newUser.role,
-         telephone: newUser.telephone,
+        telephone: newUser.telephone,
       },
     });
+
   } catch (error) {
     console.error("REGISTER ERROR:", error);
     return res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 
 // ➤ LOGIN
@@ -89,7 +91,7 @@ export const Login = async (req, res) => {
       message: "Connexion réussie",
       token,
       role: user.role,
-        user: userResponse,
+      user: userResponse,
       redirect:
         user.role === "superadmin"
           ? "/dashboard/superadmin"
@@ -118,6 +120,20 @@ export const getAllUsers = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+
+// ➤ Récupérer tous les gérants
+export const getAllGerants = async (req, res) => {
+  try {
+    const gerants = await UserModel.find({ role: "gerant" }).select("-password");
+
+    return res.status(200).json(gerants);
+  } catch (error) {
+    console.error("GET GERANTS ERROR:", error);
+    return res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 
 
 // ➤ Obtenir tous les utilisateurs

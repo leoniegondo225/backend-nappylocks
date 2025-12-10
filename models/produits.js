@@ -1,22 +1,36 @@
 // models/product.js
 import mongoose from "mongoose";
-const { model, Schema, models} = mongoose;
+const { model, Schema, models } = mongoose;
+
+// Schéma pour une variation du produit (ex : couleur + taille)
+const VariationSchema = new Schema({
+  color: { type: String, required: true },
+  size: { type: String, required: false },
+  stock: { type: Number, default: 0, min: [0] },
+  images: [{ type: String, required: true }], // URLs des images hébergées  
+  prix: { type: Number, required: true },
+});
+
 
 const ProduitSchema = new Schema(
   {
-    titre: { type: String, required: [true, "Le titre du produit est obligatoire"],trim: true,},
+    nom: { type: String, required: [true], trim: true, },
 
-    description: {type: String,required: [true, "La description du produit est obligatoire"], },
+    description: { type: String },
 
-    prix: {type: Number,required: [true, "Le prix est obligatoire"], min: [0, "Le prix ne peut pas être négatif"],},
+    prix: { type: Number, required: [true], min: [0], },
+    mainImage: { type: String, required: false }, // Image principale du produit
+    variations: [VariationSchema], // Tableau de variations
+    basePrice: { type: Number },
+    stock: { type: Number, default: 0, min: [0] },
 
-    stock: {type: Number,default: 0,min: [0, "Le stock ne peut pas être négatif"],},
+    benefaits: { type: [String], default: [] },
 
-    images: [{ type: String }],
+    volume: { type: String },
 
     categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: false, },// Modifie selon ton besoin
 
-     tags: { type: [String], default: [],}, //Liste de tags (ex : "promo", "nouveauté", "best-seller").
+    tags: { type: [String], default: [], }, //Liste de tags (ex : "promo", "nouveauté", "best-seller").
 
     active: { type: Boolean, default: true, }, //Pour activer / désactiver un produit.
   },

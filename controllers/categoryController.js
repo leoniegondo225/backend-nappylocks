@@ -4,14 +4,14 @@ import CategoryModel from "../models/category.js";
 // ▶️ Créer une catégorie
 export const CreerCategory = async (req, res) => {
   try {
-    const { nom, description, image } = req.body;
+    const { nom } = req.body;
 
     if (!nom) return res.status(400).json({ message: "Le nom est obligatoire" });
 
     const exist = await CategoryModel.findOne({ nom });
     if (exist) return res.status(400).json({ message: "Cette catégorie existe déjà" });
 
-    const category = await CategoryModel.create({ nom, description, image });
+    const category = await CategoryModel.create({ nom });
 
     res.status(201).json({ message: "Catégorie créée", category });
   } catch (error) {

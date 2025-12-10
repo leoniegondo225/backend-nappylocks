@@ -1,16 +1,19 @@
-import Salon from "../models/Salon.js";
+import SalonModel from "../models/Salon.js";
 
 // Créer un salon
 export const createSalon = async (req, res) => {
   try {
-    const { nom, address, telephone } = req.body;
+    const { nom, address, telephone,ville, pays,gerantId, email } = req.body;
 
-    const salon = await Salon.create({
+    const salon = await SalonModel.create({
       nom,
       address,
+      ville,
+      email,
+      pays,
       telephone,
-      coiffeur: req.user._id,
-      status: "en_attente",
+      gerantId,
+      status: "inactive", // Par défaut, le salon est inactif en attendant la validation
     });
 
     res.status(201).json({
@@ -23,53 +26,64 @@ export const createSalon = async (req, res) => {
   }
 };
 
-// SuperAdmin : approuver un salon
-export const validerSalon = async (req, res) => {
+// Modifier un salon (SuperAdmin)
+export const updateSalon = async (req, res) => {
   try {
-    const salon = await Salon.findByIdAndUpdate(
+    const { nom, address, ville, telephone, email, pays, gerantId, status } = req.body;
+
+    const salon = await SalonModel.findByIdAndUpdate(
       req.params.id,
-      { status: "valide" },
+      { nom, address, ville, telephone, email, pays, gerantId, status },
       { new: true }
     );
 
-    if (!salon) return res.status(404).json({ message: "Salon introuvable" });
+    if (!salon)
+      return res.status(404).json({ message: "Salon introuvable" });
 
     res.json({
-      message: "Salon approuvé",
+      message: "Salon mis à jour",
       salon,
     });
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// SuperAdmin : rejeter un salon
-export const rejectSalon = async (req, res) => {
-  try {
-    const salon = await Salon.findByIdAndUpdate(
-      req.params.id,
-      { status: "rejeté" },
-      { new: true }
-    );
-
-    if (!salon) return res.status(404).json({ message: "Salon introuvable" });
-
-    res.json({
-      message: "Salon rejeté",
-      salon,
-    });
-
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 
+// Supprimer un salon (SuperAdmin)
+export const deleteSalon = async (req, res) => {
+  try {
+    const salon = await SalonModel.findByIdAndDelete(req.params.id);
+
+    if (!salon) return res.status(404).json({ message: "Salon introuvable" });
+
+    res.json({ message: "Salon supprimé" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+ 
+
+// Lister tous les salons (SuperAdmin)
+export const getAllSalons = async (req, res) => {
+  try {
+    const salons = await SalonModel.find().populate("gerantId", "username email");
+    res.json(salons);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+// Récupérer le salon du gérant connecté
 export const getMySalon = async (req, res) => {
-  const salon = await Salon.findOne({ gerant: req.user._id });
+  try {
+    const salon = await SalonModel.findOne({ gerantId: req.user._id });
 
-  if (!salon) return res.status(404).json({ message: "Aucun salon trouvé" });
+    if (!salon) return res.status(404).json({ message: "Aucun salon trouvé" });
 
-  res.json(salon);
+    res.json(salon);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

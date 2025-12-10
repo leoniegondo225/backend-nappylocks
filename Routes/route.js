@@ -1,9 +1,9 @@
 import express from "express";
 import { authMiddleware } from "../middlewares/auth.js";
-import { createSalon, getMySalon, rejectSalon, validerSalon } from "../controllers/salonController.js";
+import { createSalon, deleteSalon, getAllSalons, getMySalon, updateSalon,} from "../controllers/salonController.js";
 // import { DeleteUtilisateur, GetAllUtilisateurs, GetByIDUtilisateur, UpdateUtilisateur } from "../controllers/usersController.js";
 import {roleMiddleware} from "../middlewares/roles.js";
-import { CreerProduit, DeleteProduit, GetAllProduits, GetProduitByID, UpdateProduit } from "../controllers/produitController.js";
+import { CreateProduit, DeleteProduit, GetAllProduits, GetProduit, UpdateProduit } from "../controllers/produitController.js";
 import upload from "../middlewares/upload.js";
 import { CreerCategory, DeleteCategory, GetAllCategories, GetCategoryByID, UpdateCategory } from "../controllers/categoryController.js";
 import { CreerCommande, DeleteCommande, GetAllCommandes, GetCommandeByID, UpdateCommandeStatus } from "../controllers/commandeController.js";
@@ -12,9 +12,11 @@ import { CreerService, DeleteService, GetAllServices, GetServiceByID, UpdateServ
 import { CreeRendezvous, DeleteRendezvous, GetAllRendezvouss, GetRendezvousByID, UpdateRendezvous } from "../controllers/rendez_vousController.js";
 import { CreateCoupon, DeleteCoupon, GetAllCoupons, GetCouponByID, UpdateCoupon, ValidateCoupon } from "../controllers/couponController.js";
 import { CreateNotification, DeleteNotification, GetAllNotifications, GetNotificationByID, UpdateNotification } from "../controllers/notificationController.js";
-import { getAllUsers, Login, Register } from "../controllers/authController.js";
+import { getAllGerants, getAllUsers, Login, Register } from "../controllers/authController.js";
 import { changePassword, getProfile, updateProfile, uploadAvatar } from "../controllers/profileController.js";
-
+import { initSuperAdmin } from "../utils/initSuperAdmin.js";
+import SalonModel from "../models/Salon.js";
+import { createEmployee, deleteEmployee, getEmployees, updateEmployee } from "../controllers/employeeController.js";
 
 
 const router = express.Router();
@@ -24,17 +26,55 @@ router.get("/", (req, res) => {
     res.send("Route nappyloks OK");
 });
 
+
+
 router.get("/me2", authMiddleware, getProfile);
 router.put("/me1", authMiddleware, updateProfile);
 router.patch("/me/password", authMiddleware, changePassword);
-router.patch("/me/avatar", authMiddleware, upload.single("avatar"), uploadAvatar);
+
 
 
 // routes utilisateurs
-router.post("/register", Register);
+router.post("/register",Register);
 router.post("/login", Login);
 router.post("/admin/create-user", authMiddleware,roleMiddleware("superadmin"),Register);
 router.get("/admin/users", authMiddleware, roleMiddleware("superadmin"), getAllUsers);
+
+// SuperAdmin uniquement : CRUD complet
+router.post("/salons", authMiddleware,  createSalon);
+router.put("/salons/:id", authMiddleware, initSuperAdmin, updateSalon);
+router.delete("/deletesalons/:id", authMiddleware, initSuperAdmin, deleteSalon);
+router.get("/getallsalons", authMiddleware, getAllSalons);
+router.get("/users/gerants", authMiddleware, getAllGerants);
+router.get("/salons/me", authMiddleware, getMySalon);
+// AJOUTE ÇA ICI (dans le bon ordre !)
+router.patch("/salons/:id/status", authMiddleware, async (req, res) => {
+  const { status } = req.body;
+
+  if (!["active", "inactive"].includes(status)) {
+    return res.status(400).json({ message: "Statut invalide. Utilisez 'active' ou 'inactive'" });
+  }
+
+  try {
+    const salon = await SalonModel.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (!salon) {
+      return res.status(404).json({ message: "Salon non trouvé" });
+    }
+
+    res.json({ 
+      message: "Statut mis à jour avec succès",
+      salon 
+    });
+  } catch (error) {
+    console.error("Erreur update status salon:", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+});
 
 
 // router.get("/getAllUsers", authMiddleware, GetAllUtilisateurs);
@@ -46,21 +86,38 @@ router.get("/admin/users", authMiddleware, roleMiddleware("superadmin"), getAllU
 // router.delete( "/deleteUsers/:id", authMiddleware,roleMiddleware("superadmin"), DeleteUtilisateur);
 
 // Création avec image possible
-router.post("/createcategory", authMiddleware, upload.single("image"), CreerCategory);
+router.post("/createcategory", authMiddleware, CreerCategory);
 // Routes publiques
 router.get("/allcategory", GetAllCategories);
 router.get("/getcategory/:id", GetCategoryByID);
 // Mise à jour (optionnel upload image)
-router.put("/updatecategory/:id", authMiddleware, upload.single("image"), UpdateCategory);
+router.put("/updatecategory/:id", authMiddleware,  UpdateCategory);
 router.delete("/deletecategory/:id", authMiddleware, DeleteCategory);
 
 // Routes Produits
 // Upload multiple images: "images" est le nom du champ dans le formulaire
-router.post("/create", authMiddleware, upload.array("images", 5), CreerProduit);
+router.get("/imagekit-auth", (req, res) => {
+  try {
+    const result = imagekit.getAuthenticationParameters();
+    res.send(result);
+  } catch (err) {
+    res.status(500).json({ error: "Impossible de générer l'auth ImageKit" });
+  }
+});
+router.post("/produits", authMiddleware, CreateProduit);
+// GET tous les produits
 router.get("/getAllproduit", GetAllProduits);
-router.get("/getproduit/:id", GetProduitByID);
-router.put("/updateproduit/:id", authMiddleware, upload.array("images", 5), UpdateProduit);
-router.delete("/deleteproduit/:id", authMiddleware, DeleteProduit);
+// GET produit par ID
+router.get("/getproduit/:id", GetProduit);
+router.put("/produits/:id", authMiddleware, UpdateProduit);
+router.delete("/produits/:id", authMiddleware, DeleteProduit);
+
+//personnelle
+router.post("/createemployee", createEmployee);
+router.get("/getallemployee", getEmployees);
+router.patch("/update/:id", updateEmployee);
+router.delete("/delete/:id", deleteEmployee);
+
 
 //routes pour les commandes
 router.post("/addCommande", authMiddleware, CreerCommande);
@@ -106,12 +163,6 @@ router.post("/remove-coupon", RemoveCoupon);
 
 // ROUTES PROPRIETAIRE
 
-// Créer un salon
-router.post("/creat", authMiddleware, createSalon);
-router.put("/:id/valide", authMiddleware, validerSalon);
-router.put("/:id/rejete", authMiddleware, rejectSalon);
-//  voir SON salon
-router.get("/me", authMiddleware, getMySalon);
 
 
 //route pour les notification 
