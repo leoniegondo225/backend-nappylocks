@@ -3,7 +3,7 @@ import SalonModel from "../models/Salon.js";
 // Créer un salon
 export const createSalon = async (req, res) => {
   try {
-    const { nom, address, telephone,ville, pays,gerantId, email } = req.body;
+    const { nom, address, telephone, ville, pays, email } = req.body;
 
     const salon = await SalonModel.create({
       nom,
@@ -12,7 +12,6 @@ export const createSalon = async (req, res) => {
       email,
       pays,
       telephone,
-      gerantId,
       status: "inactive", // Par défaut, le salon est inactif en attendant la validation
     });
 
@@ -29,11 +28,11 @@ export const createSalon = async (req, res) => {
 // Modifier un salon (SuperAdmin)
 export const updateSalon = async (req, res) => {
   try {
-    const { nom, address, ville, telephone, email, pays, gerantId, status } = req.body;
+    const { nom, address, ville, telephone, email, pays, status } = req.body;
 
     const salon = await SalonModel.findByIdAndUpdate(
       req.params.id,
-      { nom, address, ville, telephone, email, pays, gerantId, status },
+      { nom, address, ville, telephone, email, pays, status },
       { new: true }
     );
 
@@ -49,7 +48,6 @@ export const updateSalon = async (req, res) => {
   }
 };
 
-
 // Supprimer un salon (SuperAdmin)
 export const deleteSalon = async (req, res) => {
   try {
@@ -63,26 +61,11 @@ export const deleteSalon = async (req, res) => {
   }
 };
 
- 
-
 // Lister tous les salons (SuperAdmin)
 export const getAllSalons = async (req, res) => {
   try {
-    const salons = await SalonModel.find().populate("gerantId", "username email");
+    const salons = await SalonModel.find(); // ❌ suppression du populate gérant
     res.json(salons);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-}
-
-// Récupérer le salon du gérant connecté
-export const getMySalon = async (req, res) => {
-  try {
-    const salon = await SalonModel.findOne({ gerantId: req.user._id });
-
-    if (!salon) return res.status(404).json({ message: "Aucun salon trouvé" });
-
-    res.json(salon);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

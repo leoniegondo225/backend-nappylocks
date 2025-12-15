@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 // ➤ Créer un utilisateur
 export const Register = async (req, res) => {
   try {
-    const { username, email, password, role, telephone } = req.body;
+    const { username, email, password, role, telephone, salonId } = req.body;
     console.log("REQ.BODY:", req.body);
 
     const exists = await UserModel.findOne({
@@ -19,6 +19,10 @@ export const Register = async (req, res) => {
     }
 
     const hash = await bcrypt.hash(password, 10);
+     let finalSalonId = null;
+if (req.user && req.user.role === "superadmin") {
+      finalSalonId = salonId || null;
+    }
 
     const newUser = await UserModel.create({
       username,
@@ -26,6 +30,7 @@ export const Register = async (req, res) => {
       password: hash,
       role: role || "client",
       telephone: telephone || null,
+      salonId: finalSalonId,
       createdBy: req.user ? req.user._id : null, // 🔥 correction OBLIGATOIRE
     });
 
@@ -39,6 +44,7 @@ export const Register = async (req, res) => {
         email: newUser.email,
         role: newUser.role,
         telephone: newUser.telephone,
+        salonId: newUser.salonId,
       },
     });
 
@@ -51,46 +57,63 @@ export const Register = async (req, res) => {
 
 
 // ➤ LOGIN
+
 export const Login = async (req, res) => {
   try {
     const { identifier, password } = req.body;
 
-      // identifier = email OU username
+    // Validation basique
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "Identifiant et mot de passe requis" });
+    }
+
+    // Recherche insensible à la casse pour email ET username
     const user = await UserModel.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
+      $or: [
+        { email: { $regex: new RegExp("^" + identifier + "$", "i") } },
+        { username: { $regex: new RegExp("^" + identifier + "$", "i") } },
+      ],
     });
 
-     if (!user) {
-      return res.status(400).json({ message: "Utilisateur introuvable" });
+    if (!user) {
+      // Message générique pour éviter l'énumération d'utilisateurs
+      return res.status(401).json({ message: "Identifiant ou mot de passe incorrect" });
     }
 
-   
- const match = await bcrypt.compare(password, user.password);
+    // Vérification du mot de passe
+    const match = await bcrypt.compare(password, user.password);
 
-     if (!match) {
-      return res.status(400).json({ message: "Mot de passe incorrect" });
+    if (!match) {
+      return res.status(401).json({ message: "Identifiant ou mot de passe incorrect" });
     }
 
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    // Payload JWT : on met l'ID + rôle + salonId (important pour les gérants !)
+    const payload = {
+      id: user._id,
+      role: user.role,
+    };
+    
 
-     // 🔥 IMPORTANT : renvoyer un user clair
+    // Ajoute salonId seulement s'il existe (pour les gérants)
+    if (user.salonId) {
+      payload.salonId = user.salonId;
+    }
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    // Réponse claire pour le frontend
     const userResponse = {
       _id: user._id,
-      email: user.email,
       username: user.username,
+      email: user.email,
       telephone: user.telephone,
       role: user.role,
-      createdAt: user.createdAt,
+      salonId: user.salonId || null,
     };
 
     return res.status(200).json({
       message: "Connexion réussie",
       token,
-      role: user.role,
       user: userResponse,
       redirect:
         user.role === "superadmin"
@@ -100,14 +123,12 @@ export const Login = async (req, res) => {
           : user.role === "gerant"
           ? "/dashboard/gerant"
           : "/app",
-        })
-      
+    });
   } catch (error) {
     console.error("LOGIN ERROR:", error);
     return res.status(500).json({ message: "Erreur serveur" });
   }
 };
-
 // Récupérer tous les utilisateurs créés par le superadmin
 export const getAllUsers = async (req, res) => {
   try {

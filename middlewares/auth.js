@@ -8,7 +8,7 @@ export const authMiddleware = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await UserModel.findById(decoded.id);
+    const user = await UserModel.findById(decoded.id).select("salonId role");
     if (!user) return res.status(401).json({ message: "Utilisateur introuvable" });
     req.user = user;
     next();

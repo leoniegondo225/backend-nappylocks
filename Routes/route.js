@@ -1,6 +1,6 @@
 import express from "express";
 import { authMiddleware } from "../middlewares/auth.js";
-import { createSalon, deleteSalon, getAllSalons, getMySalon, updateSalon,} from "../controllers/salonController.js";
+import { createSalon, deleteSalon, getAllSalons, updateSalon,} from "../controllers/salonController.js";
 // import { DeleteUtilisateur, GetAllUtilisateurs, GetByIDUtilisateur, UpdateUtilisateur } from "../controllers/usersController.js";
 import {roleMiddleware} from "../middlewares/roles.js";
 import { CreateProduit, DeleteProduit, GetAllProduits, GetProduit, UpdateProduit } from "../controllers/produitController.js";
@@ -13,10 +13,14 @@ import { CreeRendezvous, DeleteRendezvous, GetAllRendezvouss, GetRendezvousByID,
 import { CreateCoupon, DeleteCoupon, GetAllCoupons, GetCouponByID, UpdateCoupon, ValidateCoupon } from "../controllers/couponController.js";
 import { CreateNotification, DeleteNotification, GetAllNotifications, GetNotificationByID, UpdateNotification } from "../controllers/notificationController.js";
 import { getAllGerants, getAllUsers, Login, Register } from "../controllers/authController.js";
-import { changePassword, getProfile, updateProfile, uploadAvatar } from "../controllers/profileController.js";
+import { changePassword, getProfile, updateProfile } from "../controllers/profileController.js";
 import { initSuperAdmin } from "../utils/initSuperAdmin.js";
 import SalonModel from "../models/Salon.js";
 import { createEmployee, deleteEmployee, getEmployees, updateEmployee } from "../controllers/employeeController.js";
+import { CreateClient, DeleteClient, GetClientById, GetClients, UpdateClient } from "../controllers/clientController.js";
+import { CreateRdv, DeleteRdv, GetRdvById, GetRdvs, UpdateRdv } from "../controllers/rdvController.js";
+import { CreerCategoryPrestation, DeleteCategoryPrestation, GetAllCategoriesPrestation, GetCategoryPrestationByID, UpdateCategoryPrestation } from "../controllers/categoryPrestationController.js";
+import { CreatePrestation, DeletePrestation, GetPrestations, TogglePrestation, UpdatePrestation } from "../controllers/prestationController.js";
 
 
 const router = express.Router();
@@ -44,9 +48,8 @@ router.get("/admin/users", authMiddleware, roleMiddleware("superadmin"), getAllU
 router.post("/salons", authMiddleware,  createSalon);
 router.put("/salons/:id", authMiddleware, initSuperAdmin, updateSalon);
 router.delete("/deletesalons/:id", authMiddleware, initSuperAdmin, deleteSalon);
-router.get("/getallsalons", authMiddleware, getAllSalons);
-router.get("/users/gerants", authMiddleware, getAllGerants);
-router.get("/salons/me", authMiddleware, getMySalon);
+router.get("/getallsalons", getAllSalons);
+router.get("/users/gerants", getAllGerants);
 // AJOUTE ÇA ICI (dans le bon ordre !)
 router.patch("/salons/:id/status", authMiddleware, async (req, res) => {
   const { status } = req.body;
@@ -118,6 +121,33 @@ router.get("/getallemployee", getEmployees);
 router.patch("/update/:id", updateEmployee);
 router.delete("/delete/:id", deleteEmployee);
 
+//presation et ces category
+
+router.post("/addcategory", CreerCategoryPrestation)
+router.get("/allcategory", GetAllCategoriesPrestation)
+router.get("/get/:id", GetCategoryPrestationByID)
+router.put("/putcategory/:id", UpdateCategoryPrestation)
+router.delete("/delete/:id", DeleteCategoryPrestation)
+
+//prestation
+router.post("/addprestation", CreatePrestation)
+router.get("/allprestations", GetPrestations )
+router.put("/putprestation/:id", UpdatePrestation)
+router.delete("/delete/:id", DeletePrestation)
+router.patch("/toggleprestation/:id/toggle", TogglePrestation)
+
+
+router.post("/createclient", authMiddleware, CreateClient);
+router.get("/allclient",authMiddleware, GetClients);
+router.get("/getclient/:id", authMiddleware,GetClientById);
+router.put("/updateclient/:id",authMiddleware, UpdateClient);
+router.delete("/deleteclient/:id",authMiddleware, DeleteClient);
+
+router.post("/createrdv", CreateRdv);
+router.get("/allrdv", GetRdvs);
+router.get("/rdv/:id", GetRdvById);
+router.put("/updaterdv/:id", UpdateRdv);
+router.delete("/deleterdv/:id", DeleteRdv);
 
 //routes pour les commandes
 router.post("/addCommande", authMiddleware, CreerCommande);

@@ -9,6 +9,7 @@ const UserSchema = new Schema(
     telephone: { type: String },
     password: { type: String, required: true,},
     role: { type: String, enum: ["client","gerant", "admin", "superadmin"], default: "client" },
+   salonId:{type: mongoose.Schema.Types.ObjectId,ref: 'Salon'},
      avatar: { type: String, default: "" },
      verified: { type: Boolean, default: false },
      createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

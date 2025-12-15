@@ -10,7 +10,6 @@ const SalonSchema = new Schema(
     pays: { type: String, required: true },
     email: { type: String, required: true },
     ville: { type: String, required: true },
-    gerantId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     status: { type: String, enum:  ["active", "inactive"], default: "active" }, // référence aux services proposés
     
   },
