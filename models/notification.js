@@ -1,23 +1,23 @@
 import mongoose from "mongoose";
-const {Schema, model, models}= mongoose;
 
-const NotificationSchema = new Schema(
-  {
-    userId: {type: mongoose.Schema.Types.ObjectId,ref: "User",required: true, },
+const {Schema, model, models} = mongoose
 
-    channel: { type: String,enum: ["email", "sms", "app"],required: true,},
+const NotificationSchema = new Schema({
 
-    message: { type: String, required: true,},
-
-    status: { type: String,enum: ["sent", "en_attente", "failed"], default: "en_attente", },
-
-    meta: {type: Object,default: {},},
-
-    sentAt: {type: Date,default: null,},
-  },
-  { timestamps: true }
-);
+salonId: { type: Schema.Types.ObjectId, ref: "Salon" },
+rdvId: { type: Schema.Types.ObjectId, ref: "Rdv" },
 
 
- const NotificationModel = models.Notification || model("Notification", NotificationSchema);
- export default NotificationModel
+type: {
+type: String,
+enum: ["NEW_RDV", "CONFIRM_RDV", "CANCEL_RDV"],
+},
+
+
+message: String,
+read: { type: Boolean, default: false },
+createdAt: { type: Date, default: Date.now },
+});
+
+
+export default models.Notification || model("Notification", NotificationSchema);

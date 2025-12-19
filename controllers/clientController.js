@@ -61,11 +61,19 @@ export const GetClients = async (req, res) => {
     if (!req.user || !req.user.salonId) {
       return res.status(401).json({ message: "Utilisateur non authentifié." });
     }
+    let query = {};
+if (req.user.role !== "superadmin") {
+  if (!req.user.salonId) {
+    return res.status(401).json({ message: "Utilisateur non authentifié." });
+  }
+  query = { salonId: req.user.salonId };
+}
 
     const clients = await ClientModel.find({ salonId: req.user.salonId })
       .sort({ createdAt: -1 })
       .populate("createdBy", "username")
       .populate("updatedBy", "username")
+      .populate("salonId", "name")
       .lean();
 
     res.status(200).json(clients);

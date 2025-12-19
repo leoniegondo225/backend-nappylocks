@@ -9,18 +9,18 @@ import { CreerCategory, DeleteCategory, GetAllCategories, GetCategoryByID, Updat
 import { CreerCommande, DeleteCommande, GetAllCommandes, GetCommandeByID, UpdateCommandeStatus } from "../controllers/commandeController.js";
 import { AddToPanier, ApplyCoupon, ClearCart, GetpanierByUser, RemoveCartItem, RemoveCoupon, UpdateCartItem } from "../controllers/panierController.js";
 import { CreerService, DeleteService, GetAllServices, GetServiceByID, UpdateService } from "../controllers/servicesController.js";
-import { CreeRendezvous, DeleteRendezvous, GetAllRendezvouss, GetRendezvousByID, UpdateRendezvous } from "../controllers/rendez_vousController.js";
 import { CreateCoupon, DeleteCoupon, GetAllCoupons, GetCouponByID, UpdateCoupon, ValidateCoupon } from "../controllers/couponController.js";
 import { CreateNotification, DeleteNotification, GetAllNotifications, GetNotificationByID, UpdateNotification } from "../controllers/notificationController.js";
 import { getAllGerants, getAllUsers, Login, Register } from "../controllers/authController.js";
 import { changePassword, getProfile, updateProfile } from "../controllers/profileController.js";
 import { initSuperAdmin } from "../utils/initSuperAdmin.js";
 import SalonModel from "../models/Salon.js";
-import { createEmployee, deleteEmployee, getEmployees, updateEmployee } from "../controllers/employeeController.js";
+import { createEmployee, deleteEmployee, getEmployees, getEmployeesBySalon, updateEmployee } from "../controllers/employeeController.js";
 import { CreateClient, DeleteClient, GetClientById, GetClients, UpdateClient } from "../controllers/clientController.js";
-import { CreateRdv, DeleteRdv, GetRdvById, GetRdvs, UpdateRdv } from "../controllers/rdvController.js";
+import {  CancelRdvByClient, ConfirmRdvByClient, CreateRdvOnline, CreateRdvSalon, GetAvailableSlots} from "../controllers/rdvController.js";
 import { CreerCategoryPrestation, DeleteCategoryPrestation, GetAllCategoriesPrestation, GetCategoryPrestationByID, UpdateCategoryPrestation } from "../controllers/categoryPrestationController.js";
 import { CreatePrestation, DeletePrestation, GetPrestations, TogglePrestation, UpdatePrestation } from "../controllers/prestationController.js";
+
 
 
 const router = express.Router();
@@ -118,6 +118,7 @@ router.delete("/produits/:id", authMiddleware, DeleteProduit);
 //personnelle
 router.post("/createemployee", createEmployee);
 router.get("/getallemployee", getEmployees);
+router.get("/employees/salon/:salonId", getEmployeesBySalon);
 router.patch("/update/:id", updateEmployee);
 router.delete("/delete/:id", deleteEmployee);
 
@@ -143,11 +144,16 @@ router.get("/getclient/:id", authMiddleware,GetClientById);
 router.put("/updateclient/:id",authMiddleware, UpdateClient);
 router.delete("/deleteclient/:id",authMiddleware, DeleteClient);
 
-router.post("/createrdv", CreateRdv);
-router.get("/allrdv", GetRdvs);
-router.get("/rdv/:id", GetRdvById);
-router.put("/updaterdv/:id", UpdateRdv);
-router.delete("/deleterdv/:id", DeleteRdv);
+router.post("/online", CreateRdvOnline);
+router.post("/salon", CreateRdvSalon);
+router.get("/slots", GetAvailableSlots);
+router.patch("/:id/confirm", ConfirmRdvByClient);
+router.patch("/:id/cancel", CancelRdvByClient);
+
+
+
+router.patch("/rdv/:id/confirm", ConfirmRdvByClient);
+router.patch("/rdv/:id/cancel", CancelRdvByClient);
 
 //routes pour les commandes
 router.post("/addCommande", authMiddleware, CreerCommande);
@@ -171,12 +177,7 @@ router.put("/updateservice/:id", UpdateService);
 router.delete("/deleteservice/:id", DeleteService);
 
 
-//route rendez-
-router.post("/create", CreeRendezvous);
-router.get("/getAll", GetAllRendezvouss);
-router.get("/get/:id", GetRendezvousByID);
-router.put("/update/:id", UpdateRendezvous);
-router.delete("/delete/:id", DeleteRendezvous);
+
 
 //coupon 
 router.post("/create", CreateCoupon);

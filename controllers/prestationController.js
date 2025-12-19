@@ -5,7 +5,7 @@ import CategoryPrestationModel from "../models/categoryprestation.js"
 export const GetPrestations = async (req, res) => {
   try {
     const prestations = await PrestationModel.find()
-      .populate("categoryId")           
+      .populate("categoryPrestationId")           
       .sort({ createdAt: -1 })
 
     res.json(prestations)
@@ -16,24 +16,27 @@ export const GetPrestations = async (req, res) => {
 
 export const CreatePrestation = async (req, res) => {
   try {
-    const { name, categoryId,  prices, description } = req.body;
+    const { name, categoryPrestationId,  prices, description } = req.body;
 
-    if (!name || !categoryId || !duration || prices.length === 0) {
+    if (!name || !categoryPrestationId || !Array.isArray(prices) || prices.length === 0) {
       return res.status(400).json({ error: "Champs obligatoires manquants ou prix vide" });
     }
 
     // Récupérer la catégorie par nom
-    const categoryDoc = await CategoryPrestationModel.findOne({ name: categoryId });
-    if (!categoryDoc) return res.status(404).json({ error: "Catégorie introuvable" });
+   // Nouveau (correct)
+const categoryprestationDoc = await CategoryPrestationModel.findById(categoryPrestationId);
+if (!categoryprestationDoc) return res.status(404).json({ error: "Catégorie introuvable" });
+
 
     const prestation = await PrestationModel.create({
       name,
-      categoryId: categoryDoc._id,
-      duration,
+     categoryPrestationId: categoryPrestationId,
       prices,       // tableau de prix
       description,
+      isActive: true
     });
-
+    
+  await prestation.populate("categoryPrestationId");
     res.json(prestation);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -47,11 +50,10 @@ export const UpdatePrestation = async (req, res) => {
     let updateData = { ...req.body };
 
     // Conversion catégorie nom → ObjectId
-    if (req.body.categoryId) {
-      const categoryDoc = await CategoryPrestationModel.findOne({ name: req.body.categoryId });
-      if (!categoryDoc) return res.status(404).json({ error: "Catégorie introuvable" });
-      updateData.categoryId = categoryDoc._id;
-      delete updateData.categoryId;
+    if (req.body.categoryPrestationId) {
+      const categoryprestationDoc = await CategoryPrestationModel.findOne({ name: req.body.categoryPrestationId });
+      if (!categoryprestationDoc) return res.status(404).json({ error: "Catégorie introuvable" });
+      updateData.categoryPrestationId = categoryprestationDoc._id;
     }
 
     // S'assurer que prices est un tableau si fourni
