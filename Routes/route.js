@@ -11,15 +11,16 @@ import { AddToPanier, ApplyCoupon, ClearCart, GetpanierByUser, RemoveCartItem, R
 import { CreerService, DeleteService, GetAllServices, GetServiceByID, UpdateService } from "../controllers/servicesController.js";
 import { CreateCoupon, DeleteCoupon, GetAllCoupons, GetCouponByID, UpdateCoupon, ValidateCoupon } from "../controllers/couponController.js";
 import { CreateNotification, DeleteNotification, GetAllNotifications, GetNotificationByID, UpdateNotification } from "../controllers/notificationController.js";
-import { getAllGerants, getAllUsers, Login, Register } from "../controllers/authController.js";
+import { deleteUser, getAllGerants, getAllUsers, Login, Register, updateUser } from "../controllers/authController.js";
 import { changePassword, getProfile, updateProfile } from "../controllers/profileController.js";
 import { initSuperAdmin } from "../utils/initSuperAdmin.js";
 import SalonModel from "../models/Salon.js";
 import { createEmployee, deleteEmployee, getEmployees, getEmployeesBySalon, updateEmployee } from "../controllers/employeeController.js";
 import { CreateClient, DeleteClient, GetClientById, GetClients, UpdateClient } from "../controllers/clientController.js";
-import {  CancelRdvByClient, ConfirmRdvByClient, CreateRdvOnline, CreateRdvSalon, GetAvailableSlots} from "../controllers/rdvController.js";
+import {  CancelRdvByClient, ConfirmRdvByClient, CreateRdvOnline, CreateRdvSalon, GetAvailableSlots, getRdvsGerant} from "../controllers/rdvController.js";
 import { CreerCategoryPrestation, DeleteCategoryPrestation, GetAllCategoriesPrestation, GetCategoryPrestationByID, UpdateCategoryPrestation } from "../controllers/categoryPrestationController.js";
 import { CreatePrestation, DeletePrestation, GetPrestations, TogglePrestation, UpdatePrestation } from "../controllers/prestationController.js";
+import { createPrestationRealisee, getPrestationsByClient } from "../controllers/prestationRealisee.js";
 
 
 
@@ -43,11 +44,13 @@ router.post("/register",Register);
 router.post("/login", Login);
 router.post("/admin/create-user", authMiddleware,roleMiddleware("superadmin"),Register);
 router.get("/admin/users", authMiddleware, roleMiddleware("superadmin"), getAllUsers);
+router.put("/admin/users/:id",authMiddleware,roleMiddleware("superadmin"),updateUser);
+router.delete("/admin/users/delete/:id",authMiddleware,roleMiddleware("superadmin"),deleteUser);
 
 // SuperAdmin uniquement : CRUD complet
 router.post("/salons", authMiddleware,  createSalon);
-router.put("/salons/:id", authMiddleware, initSuperAdmin, updateSalon);
-router.delete("/deletesalons/:id", authMiddleware, initSuperAdmin, deleteSalon);
+router.put("/salons/:id", authMiddleware, roleMiddleware("superadmin"), updateSalon);
+router.delete("/deletesalons/:id", authMiddleware, roleMiddleware("superadmin"), deleteSalon);
 router.get("/getallsalons", getAllSalons);
 router.get("/users/gerants", getAllGerants);
 // AJOUTE ÇA ICI (dans le bon ordre !)
@@ -124,19 +127,22 @@ router.delete("/delete/:id", deleteEmployee);
 
 //presation et ces category
 
-router.post("/addcategory", CreerCategoryPrestation)
-router.get("/allcategory", GetAllCategoriesPrestation)
+router.post("/addcategory", authMiddleware, CreerCategoryPrestation)
+router.get("/prestation-categories", authMiddleware, GetAllCategoriesPrestation) // GET peut être ouvert ou protégé
 router.get("/get/:id", GetCategoryPrestationByID)
 router.put("/putcategory/:id", UpdateCategoryPrestation)
 router.delete("/delete/:id", DeleteCategoryPrestation)
 
 //prestation
-router.post("/addprestation", CreatePrestation)
-router.get("/allprestations", GetPrestations )
-router.put("/putprestation/:id", UpdatePrestation)
-router.delete("/delete/:id", DeletePrestation)
+router.post("/addprestation",authMiddleware, CreatePrestation)
+router.get("/allprestations", authMiddleware,GetPrestations)
+router.put("/put-prestation/:id",authMiddleware ,UpdatePrestation)
+router.delete("/delete-prestation/:id", authMiddleware,DeletePrestation)
 router.patch("/toggleprestation/:id/toggle", TogglePrestation)
 
+// Route pour attribuer une prestation à un client
+router.post("/createprestation", authMiddleware, createPrestationRealisee);
+router.get("/prestations/client/:clientId", authMiddleware, getPrestationsByClient);
 
 router.post("/createclient", authMiddleware, CreateClient);
 router.get("/allclient",authMiddleware, GetClients);
@@ -149,6 +155,7 @@ router.post("/salon", CreateRdvSalon);
 router.get("/slots", GetAvailableSlots);
 router.patch("/:id/confirm", ConfirmRdvByClient);
 router.patch("/:id/cancel", CancelRdvByClient);
+router.get("/gerant", authMiddleware, getRdvsGerant);
 
 
 

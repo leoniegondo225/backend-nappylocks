@@ -7,40 +7,53 @@ export const CreateClient = async (req, res) => {
 
     // Validation des champs obligatoires
     if (!prenom || !nom || !telephone) {
-      return res
-        .status(400)
-        .json({ message: "Prénom, nom et téléphone sont obligatoires." });
+      return res.status(400).json({
+        message: "Prénom, nom et téléphone sont obligatoires.",
+      });
+    }
+    
+    // Vérification authentification de base
+    if (!req.user || !req.user._id || !req.user.role) {
+      return res.status(401).json({ message: "Utilisateur non authentifié." });
     }
 
-    // Vérification que l'utilisateur est authentifié
-    if (!req.user || !req.user._id || !req.user.salonId) {
-      return res.status(401).json({ message: "Utilisateur non authentifié ou salon inconnu." });
+    // Spécifique aux gérants : besoin d'un salonId
+    if (req.user.role === "gerant" && !req.user.salonId) {
+      return res.status(400).json({ message: "Aucun salon associé à ce gérant." });
     }
 
-    // Vérifier si le téléphone existe déjà dans ce salon
-    const existingClient = await ClientModel.findOne({
-      telephone,
-      salonId: req.user.salonId,
-    });
+    // Pour superadmin, on pourrait autoriser sans salonId, mais ici on force un salonId
+    // Si tu veux que superadmin puisse créer dans n'importe quel salon, tu devras ajouter une logique
 
-    if (existingClient) {
-      return res
-        .status(400)
-        .json({ message: "Un client avec ce numéro de téléphone existe déjà dans ce salon." });
+    const salonId = req.user.salonId || null;
+    const createdBy = req.user._id;
+
+    // Vérifier doublon téléphone dans le salon
+    if (salonId) {
+      const existingClient = await ClientModel.findOne({
+        telephone: telephone.trim(),
+        salonId,
+      });
+
+      if (existingClient) {
+        return res.status(400).json({
+          message: "Un client avec ce numéro de téléphone existe déjà dans ce salon.",
+        });
+      }
     }
 
-    // Création du client avec les champs de traçabilité
+    // Création du client
     const newClient = await ClientModel.create({
-      prenom,
-      nom,
-      telephone,
-      email: email || undefined,
-      notes: notes || undefined,
-      salonId: req.user.salonId,     // ← Forcé côté serveur
-      createdBy: req.user._id,       // ← Qui a créé
+      prenom: prenom.trim(),
+      nom: nom.trim(),
+      telephone: telephone.trim(),
+      email: email?.trim() || undefined,
+      notes: notes?.trim() || undefined,
+      salonId,
+      createdBy,
     });
 
-    // Optionnel : populate pour renvoyer le nom du créateur
+    // Populate le créateur
     const populatedClient = await ClientModel.findById(newClient._id)
       .populate("createdBy", "username")
       .lean();
@@ -51,29 +64,38 @@ export const CreateClient = async (req, res) => {
     });
   } catch (error) {
     console.error("Erreur création client :", error);
-    res.status(500).json({ message: "Erreur serveur", error: error.message });
+    res.status(500).json({
+      message: "Erreur serveur lors de la création du client",
+      error: error.message,
+    });
   }
 };
 
 // ➤ Récupérer tous les clients du salon du gérant connecté
+// ➤ Récupérer tous les clients (gérant = son salon seulement, superadmin = tous)
 export const GetClients = async (req, res) => {
   try {
-    if (!req.user || !req.user.salonId) {
+    // Vérification de base
+    if (!req.user) {
       return res.status(401).json({ message: "Utilisateur non authentifié." });
     }
-    let query = {};
-if (req.user.role !== "superadmin") {
-  if (!req.user.salonId) {
-    return res.status(401).json({ message: "Utilisateur non authentifié." });
-  }
-  query = { salonId: req.user.salonId };
-}
 
-    const clients = await ClientModel.find({ salonId: req.user.salonId })
+    let query = {};
+
+    // Si ce n'est PAS un superadmin → on filtre par son salon
+    if (req.user.role !== "superadmin") {
+      if (!req.user.salonId) {
+        return res.status(403).json({ message: "Accès refusé : aucun salon associé." });
+      }
+      query = { salonId: req.user.salonId };
+    }
+    // Sinon (superadmin) → query reste {} → tous les clients de tous les salons
+
+    const clients = await ClientModel.find(query)
       .sort({ createdAt: -1 })
       .populate("createdBy", "username")
       .populate("updatedBy", "username")
-      .populate("salonId", "name")
+      .populate("salonId", "nom")  // ou "name" selon ton modèle Salon
       .lean();
 
     res.status(200).json(clients);

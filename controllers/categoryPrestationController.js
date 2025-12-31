@@ -3,7 +3,7 @@ import CategoryPrestationModel from "../models/categoryprestation.js";
 
 // ▶️ Créer une catégorie
 export const CreerCategoryPrestation = async (req, res) => {
-    console.log("req.body:", req.body);
+  
   try {
     const { name } = req.body;
 
@@ -13,7 +13,7 @@ export const CreerCategoryPrestation = async (req, res) => {
     if (exist) return res.status(400).json({ message: "Cette catégorie existe déjà" });
 
     const categoryprestation = await CategoryPrestationModel.create({ name });
-
+    
     // Retourne directement l'objet créé
     res.status(201).json(categoryprestation);
   } catch (error) {
@@ -25,9 +25,8 @@ export const CreerCategoryPrestation = async (req, res) => {
 // ▶️ Obtenir toutes les catégories
 export const GetAllCategoriesPrestation = async (req, res) => {
   try {
-    console.log("🚀 Requête reçue : GET /api/allcategory");
     const categoriesprestation = await CategoryPrestationModel.find();
-    console.log("📦 Catégories trouvées en DB :", categoriesprestation);
+    
     res.status(200).json(categoriesprestation);
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur", error });

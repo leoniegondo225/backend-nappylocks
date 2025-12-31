@@ -206,3 +206,38 @@ export const CancelRdvByClient = async (req, res) => {
     });
   }
 };
+
+
+
+/**
+ * ==========================
+ * VOIR LES RDV DU JOUR POUR LE GÉRANT
+ * ==========================
+ */
+export const getRdvsGerant = async (req, res) => {
+  try {
+    // L'utilisateur connecté est un gérant (vérifié par middleware)
+    const gerant = req.user;
+
+    if (!gerant.salonId) {
+      return res.status(400).json({ message: "Aucun salon associé à ce gérant" });
+    }
+
+    // Date du jour au format YYYY-MM-DD
+    const today = new Date().toISOString().split("T")[0];
+
+    // Récupérer tous les RDV du salon du gérant pour aujourd'hui
+    const rdvs = await RdvModel.find({
+      salonId: gerant.salonId,
+      date: today,
+      status: { $ne: "CANCELLED" },
+    })
+      .sort({ time: 1 }) // tri par heure croissante
+      .lean();
+
+    res.status(200).json(rdvs);
+  } catch (error) {
+    console.error("Erreur récupération RDV gérant :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

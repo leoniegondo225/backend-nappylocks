@@ -155,7 +155,82 @@ export const getAllGerants = async (req, res) => {
   }
 };
 
+// ➤ Mettre à jour un utilisateur (superadmin uniquement)
+export const updateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, email, telephone, role } = req.body;
 
+    // Empêcher la modification du superadmin par lui-même ou d'autres
+    const targetUser = await UserModel.findById(id);
+    if (!targetUser) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    if (targetUser.role === "superadmin") {
+      return res.status(403).json({ message: "Impossible de modifier un superadmin" });
+    }
+
+    // Vérifier si le nouveau username ou email est déjà pris (par un autre utilisateur)
+    const existing = await UserModel.findOne({
+      $or: [{ username }, { email }],
+      _id: { $ne: id }, // exclure l'utilisateur actuel
+    });
+
+    if (existing) {
+      return res.status(400).json({ message: "Username ou email déjà utilisé par un autre compte" });
+    }
+
+    // Mise à jour
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      id,
+      {
+        username,
+        email,
+        telephone: telephone || null,
+        role,
+      },
+      { new: true } // renvoie le document mis à jour
+    ).select("-password");
+
+    return res.status(200).json({
+      message: "Utilisateur mis à jour avec succès",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("UPDATE USER ERROR:", error);
+    return res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// ➤ Supprimer un utilisateur (superadmin uniquement)
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier si l'utilisateur existe
+    const targetUser = await UserModel.findById(id);
+    if (!targetUser) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    // Interdire la suppression d'un superadmin
+    if (targetUser.role === "superadmin") {
+      return res.status(403).json({ message: "Impossible de supprimer un superadmin" });
+    }
+
+    // Supprimer l'utilisateur
+    await UserModel.findByIdAndDelete(id);
+
+    return res.status(200).json({
+      message: "Utilisateur supprimé avec succès",
+      userId: id,
+    });
+  } catch (error) {
+    console.error("DELETE USER ERROR:", error);
+    return res.status(500).json({ message: "Erreur serveur" });
+  }
+};
 
 // ➤ Obtenir tous les utilisateurs
 // export const GetAllUtilisateurs = async (req, res) => {

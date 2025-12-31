@@ -3,11 +3,12 @@ import dotenv from "dotenv";
 import cors from "cors";
 import fs from "fs";
 import { ConnectDB } from "./config/db.js";
-import router from "./routes/route.js";
+
 import { initSuperAdmin } from "./utils/initSuperAdmin.js";
 import { fileURLToPath } from "url";
 import path from "path";
 import methodOverride from "method-override";
+import router from "./Routes/route.js";
 
 dotenv.config();
 

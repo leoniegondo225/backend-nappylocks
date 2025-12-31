@@ -4,10 +4,9 @@ const {models, model, Schema}= mongoose
  
     name: { type: String, required: true },
     categoryPrestationId: { type: mongoose.Schema.Types.ObjectId,ref: 'CategoryPrestation', required: true },
- prices: [{ type: Number, required: true }],
+    prices: [{ type: Number, required: true }],
     description: { type: String, default: "" },
-    isActive: { type: Boolean, default: true },
-  
+    isActive: { type: Boolean, default: true }
   }, { timestamps: true})
 
 
