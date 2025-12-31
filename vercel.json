@@ -1,0 +1,24 @@
+{
+    "version": 2,
+    "regions": [
+        "cdg1"
+    ],
+    "builds": [
+        {
+            "src": "index.mjs",
+            "use": "@vercel/node",
+            "config": {
+                "includeFiles": [
+                    "public/**",
+                    "src/**"
+                ]
+            }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "index.mjs"
+        }
+    ]
+}
